@@ -23,7 +23,7 @@ def createDirectory(path):
 
 def get_observations():
 
-    IDL.run("cd, 'FastWindData' \n")
+    IDL.run("cd, '/home/hmorenom/SSW_Files/FastWindData' \n")
     IDL.run("restore,'fast_wind_measurements.save'\n", stdout=True)
     c_obs = IDL.carbon
     n_obs = IDL.nitrogen
@@ -274,7 +274,7 @@ def save_chi2(iterations, chi2_vals, path):
 
     vals = np.array([np.arange(1, iterations + 1), np.array(chi2_vals)])
     np.save(path + 'chi2_vals.npy', vals)
-    logging.info('Saved chi 2 values at ()'.format(path))
+    logging.info('Saved chi 2 values at ({})'.format(path))
 
 
 def update_progress(progress):
@@ -324,7 +324,7 @@ c6 = 2.2e-15
 c7 = 27
 c8 = 0.8
 
-iterations = 1000
+iterations = 1
 
 initial_params = [c1, c2, c3, c4, c5, c6, c7, c8]
 
@@ -335,11 +335,9 @@ obs = get_observations()
 
 obs = [obs[0], obs[-1]]  # isolate carbon for testing
 
-best_iteration, chi2_vals = run_MCMC(
-    obs, initial_params, iterations, filenames, LOG_DIRECTORY, factor=0.10)
+best_iteration, chi2_vals = run_MCMC(obs, initial_params, iterations, filenames, LOG_DIRECTORY, factor=0.10)
 
-logging.info('Finished iterating. Final parameters: {}. Final Chi^2 value: {}.'.format(
-    best_iteration[0], np.sum(np.array(best_iteration[1]))))
+logging.info('Finished iterating. Final parameters: {}. Final Chi^2 value: {}.'.format(best_iteration[0], np.sum(np.array(best_iteration[1]))))
 
 save_chi2(iterations, chi2_vals, LOG_DIRECTORY)
 
