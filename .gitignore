@@ -128,3 +128,7 @@ OgModel/density/density_parameters.save
 OgModel/density/density_starting_params.save
 OgModel/param_fast_wind_ratio.save
 OgModel/param_fast_wind.save
+
+*.log
+*.png
+*.npy
