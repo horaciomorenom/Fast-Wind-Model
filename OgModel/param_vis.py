@@ -148,7 +148,7 @@ def get_density():
 def get_carbon_ion():
 
 
-    IDL.run("cd, '/home/hmorenom/FastWindData'  \n")
+    IDL.run("cd, '/home/hmorenom/SSW_Files/FastWindData'  \n")
     IDL.run("restore,'fast_wind_measurements.save', /v\n", stdout=True)
     IDL.run("measured_ion = carbon")
 
@@ -162,10 +162,27 @@ def get_carbon_ion():
 
     return np.array([measured_ion, predicted_ion])
 
+def get_oxygen_ion():
+
+
+    IDL.run("cd, '/home/hmorenom/SSW_Files/FastWindData'  \n")
+    IDL.run("restore,'fast_wind_measurements.save', /v\n", stdout=True)
+    IDL.run("measured_ion = oxygen")
+
+    measured_ion = IDL.MEASURED_ION
+
+    IDL.run("cd, '/home/hmorenom/SSW_Files/OgModel/temp'  \n")
+    IDL.run("restore,'pred_o.save'\n", stdout=True)
+    IDL.run("predicted_ion = ioneq_evol(*,-1)")
+
+    predicted_ion = IDL.PREDICTED_ION
+
+    return np.array([measured_ion, predicted_ion])
+
 def get_iron_ion():
 
 
-    IDL.run("cd, '/home/hmorenom/FastWindData'  \n")
+    IDL.run("cd, '/home/hmorenom/SSW_Files/FastWindData'  \n")
     IDL.run("restore,'fast_wind_measurements.save', /v\n", stdout=True)
     IDL.run("measured_ion = iron")
 
@@ -178,6 +195,7 @@ def get_iron_ion():
     predicted_ion = IDL.PREDICTED_ION
 
     return np.array([measured_ion, predicted_ion])
+    
 def plot_temp(values_end,  values_start):
 
     fig_dens, (ax1) = plt.subplots(1, 1, figsize=(10, 10))
@@ -233,7 +251,7 @@ def plot_densities(height, dens):
 
 def plot_ion(ions):
     
-    fig_ion, (ax1) = plt.subplots(1,1, figsize=(16,10))
+    fig_ion, (ax1) = plt.subplots(1,1, figsize=(26,15))
     X = np.arange(7)
     ax1.bar(X - 0.20, ions[0], color = 'b', width = 0.4, label='Measured Fractions')
     ax1.bar(X + 0.20, ions[1], color = 'g', width = 0.4, label='Predicted Fractions')
@@ -243,9 +261,9 @@ def plot_ion(ions):
     ax1.set(title='Fraction of Measured and Predicted Carbon Ions')
     ax1.legend()
 
-def plot_ions(ions_c, ions_fe):
+def plot_ions(ions_c, ions_o, ions_fe):
     
-    fig_ion, (ax1,ax2) = plt.subplots(1,2, figsize=(17,8))
+    fig_ion, (ax1,ax2,ax3) = plt.subplots(1,3, figsize=(20,8))
     ions_c_cut = [ions_c[0,3:7], ions_c[1,3:7]]
     X = np.arange(3,7)
     ax1.bar(X - 0.20, ions_c_cut[0], color = 'b', width = 0.4, label='Measured Fractions')
@@ -257,21 +275,34 @@ def plot_ions(ions_c, ions_fe):
     ax1.legend()
     ax1.set_xticks(np.arange(min(X), max(X)+1, 1.0))    
 
+    Z = np.arange(4,9)
+    ions_o_cut = [ions_o[0,4:9], ions_o[1,4:9]]
+    ax2.bar(Z - 0.20, ions_o_cut[0], color = 'b', width = 0.4, label='Measured Fractions')
+    ax2.bar(Z + 0.20, ions_o_cut[1], color = 'g', width = 0.4, label='Predicted Fractions')
+    
+    ax2.set_xlabel('Ionization Stages [+e]')
+    ax2.set_ylabel('Fraction of Total Number of O Atoms')	
+    ax2.set(title='Fraction of Measured and Predicted Oxygen Ions')
+    ax2.legend()
+    ax2.set_xticks(Z)
+
     ions_fe_cut = [ions_fe[0,7:17], ions_fe[1,7:17]]
     print(ions_fe_cut)
     Y =  np.arange(7,17)
-    ax2.bar(Y - 0.20, ions_fe_cut[0], color = 'b', width = 0.4, label='Measured Fractions')
-    ax2.bar(Y + 0.20, ions_fe_cut[1], color = 'g', width = 0.4, label='Predicted Fractions')
+    ax3.bar(Y - 0.20, ions_fe_cut[0], color = 'b', width = 0.4, label='Measured Fractions')
+    ax3.bar(Y + 0.20, ions_fe_cut[1], color = 'g', width = 0.4, label='Predicted Fractions')
     
-    ax2.set_xlabel('Ionization Stages [+e]')
-    ax2.set_ylabel('Fraction of Total Number of Fe Atoms')	
-    ax2.set(title='Fraction of Measured and Predicted Iron Ions')
-    ax2.legend()
-    ax2.set_xticks(Y)
+    ax3.set_xlabel('Ionization Stages [+e]')
+    ax3.set_ylabel('Fraction of Total Number of Fe Atoms')	
+    ax3.set(title='Fraction of Measured and Predicted Iron Ions')
+    ax3.legend()
+    ax3.set_xticks(Y)
 
 c = [c1, c2, c3, c4, c5, c6, c7, c8]
 
-reyna_c = [4.08805169e-07, 2.62897768e+00, 6e6, 5.44819417e-01, 6.10295363e-01, 4.33760999e-07, 3.60563744e+01, 5.27494001e-01]
+c = [2.36196e-17, 3.63, 2000000.0, 0.4, 0.75, 2.42e-15, 21.87, 0.7128]
+
+c =[2.1892047693750008e-17, 4.00684079296875, 2000000.0, 0.4, 0.7129687499999999, 2.4805000000000004e-15, 22.97716875, 0.7867978284374999]
 
 starting_c = [4e-17, 4, 2e6, 0.5, 0.5, 2e-15, 30, 0.2]
 
@@ -279,10 +310,12 @@ starting_c = [4e-17, 4, 2e6, 0.5, 0.5, 2e-15, 30, 0.2]
 
 values, index = parametrize(c)
 
-#start_vals, start_index = parametrize(starting_c)
+#ssw.run('run_wind')
+
+start_vals, start_index = parametrize(starting_c)
 
 
-#plot_temp(values, start_vals)
+plot_temp(values, start_vals)
 
 #densities = get_density()
 
@@ -295,11 +328,14 @@ values, index = parametrize(c)
 #plot_densities(values[0], densities)
 
 c_ions = get_carbon_ion()
+o_ions = get_oxygen_ion()
 fe_ions = get_iron_ion()
+
+
 
 #print(fe_ions)
 
-plot_ions(c_ions, fe_ions)
+plot_ions(c_ions, o_ions, fe_ions)
 #plt.plot([0,1,2,3], [0,1,2,3])
 
 

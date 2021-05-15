@@ -314,28 +314,27 @@ logging.basicConfig(filename=LOG_FILENAME, format='%(asctime)s %(levelname)-8s %
 
 logging.info('Start program')
 
-# parameters from run 19:17:56 on 3/16/21
-c1 = 2.9e-17
-c2 = 5.314683
+c1 = 4e-17
+c2 = 3
 c3 = 2e6
-c4 = 0.36
-c5 = 0.7425
-c6 = 2.2e-15
-c7 = 27
+c4 = 0.4
+c5 = 0.75
+c6 = 2.0e-15
+c7 = 30
 c8 = 0.8
 
-iterations = 1
+iterations = 1000
 
-initial_params = [c1, c2, c3, c4, c5, c6, c7, c8]
+initial_params = [2.3619600000000006e-17, 3.63, 2000000.0, 0.4, 0.75, 2.4200000000000003e-15, 21.87, 0.7128]
 
-filenames = ['pred_c.save', 'pred_fe.save']
+filenames = ['pred_c.save', 'pred_o.save', 'pred_fe.save']
 #filenames = ['pred_c.save', 'pred_n.save', 'pred_o.save', 'pred_ne.save','pred_mg.save','pred_si.save', 'pred_s.save', 'pred_fe.save']
 
 obs = get_observations()
 
-obs = [obs[0], obs[-1]]  # isolate carbon for testing
+obs = [obs[0], obs[2], obs[-1]]  # isolate carbon for testing
 
-best_iteration, chi2_vals = run_MCMC(obs, initial_params, iterations, filenames, LOG_DIRECTORY, factor=0.10)
+best_iteration, chi2_vals = run_MCMC(obs, initial_params, iterations, filenames, LOG_DIRECTORY, factor=0.025)
 
 logging.info('Finished iterating. Final parameters: {}. Final Chi^2 value: {}.'.format(best_iteration[0], np.sum(np.array(best_iteration[1]))))
 
