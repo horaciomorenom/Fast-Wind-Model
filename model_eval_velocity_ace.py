@@ -20,22 +20,29 @@ def createDirectory(path):
     os.mkdir(path)
     return path
 
+def convert_to_fraction(array):
+    array = array / np.sum(array)
+
+    return array 
+
 
 def get_observations(index):
 
     IDL.run("cd, '/home/hmorenom/SSW_Files/FastWindData' \n")
     IDL.run("restore,'fast_wind_measurements_ace.save'\n", stdout=True)
 
-    c_obs = IDL.carbon[:,index]
-    n_obs = IDL.nitrogen[:,index]
-    o_obs = IDL.oxygen[:,index]
-    ne_obs = IDL.neon[:,index]
-    mg_obs = IDL.magnesium[:,index]
-    si_obs = IDL.silicon[:,index]
-    s_obs = IDL.sulphur[:,index]
-    fe_obs = IDL.iron[:,index]
+    c_obs = convert_to_fraction(IDL.carbon[:,index])
+    n_obs = convert_to_fraction(IDL.nitrogen[:,index])
+    o_obs = convert_to_fraction(IDL.oxygen[:,index])
+    ne_obs = convert_to_fraction(IDL.neon[:,index])
+    mg_obs = convert_to_fraction(IDL.magnesium[:,index])
+    si_obs = convert_to_fraction(IDL.silicon[:,index])
+    s_obs = convert_to_fraction(IDL.sulphur[:,index])
+    fe_obs = convert_to_fraction(IDL.iron[:,index])
 
     observations = [c_obs, n_obs, o_obs, ne_obs, mg_obs, si_obs, s_obs, fe_obs]
+
+    
 
     return observations
 
@@ -339,23 +346,23 @@ c7 = 30
 c8 = 0.8
 c9 = 2000
 c10 = 600
-c11 = 687.66667 #final velocity
+c11 = 641.58333 #final velocity
 c12 = 0.4
  
-iterations = 1000
+iterations = 2000
 
-initial_params = [4.2000000000000005e-17, 2.3213428125, 2000000.0, 0.361, 0.748125, 2e-15, 30, 0.8, 2000, 600, 687.66667, 0.4]
+initial_params = [4e-17, 3, 2000000.0, 0.4, 0.75, 2e-15, 30, 0.8, 2000, 600, 582.33333, 0.4]
 
 filenames = ['pred_c.save', 'pred_o.save', 'pred_fe.save']
 #filenames = ['pred_c.save', 'pred_n.save', 'pred_o.save', 'pred_ne.save','pred_mg.save','pred_si.save', 'pred_s.save', 'pred_fe.save']
 
-obs = get_observations(3)
+obs = get_observations(1) 
 
 obs = [obs[0], obs[2], obs[-1]]  
 
-print(obs)
+#print(obs)
 
-best_iteration, chi2_vals = run_MCMC(obs, initial_params, iterations, filenames, LOG_DIRECTORY, factor=0.05)
+best_iteration, chi2_vals = run_MCMC(obs, initial_params, iterations, filenames, LOG_DIRECTORY, factor=0.1)
 
 logging.info('Finished iterating. Final parameters: {}. Final Chi^2 value: {}.'.format(best_iteration[0], np.sum(np.array(best_iteration[1]))))
 

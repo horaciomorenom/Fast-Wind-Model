@@ -17,6 +17,11 @@ def cutAndTransformToArray(l, ind):
     l = np.array(l)
     return l
 
+def convert_to_fraction(array):
+    array = array / np.sum(array)
+
+    return array 
+
 
 def parametrize(parameters):
 
@@ -121,37 +126,28 @@ def parametrize(parameters):
     #logging.info('Saved param_fast_wind.save file.')
 
 
-def get_density():
+def get_predictions():
+
+    IDL.run("cd, '/home/hmorenom/SSW_Files/OgModel/temp_vis'  \n")
+    IDL.run("restore,'pred_c.save'\n", stdout=True)
+
+    height = IDL.HHH_USED
+    temp = IDL.TTT_USED
+    density = IDL.DDD_USED
+    velocity = IDL.VVV_USED
     
-    IDL.run("cd, '/home/hmorenom/SSW_Files/OgModel/density'  \n")
-    IDL.run("restore,'density_original.save'\n", stdout=True)
-
-    original_density = IDL.DENSITY
-
-    original_density = np.array(original_density)
-
-    IDL.run("cd, '/home/hmorenom/SSW_Files/OgModel/density'  \n")
-    IDL.run("restore,'density_parameters.save'\n", stdout=True)
-
-    parameters_density = IDL.DENSITY
-    parameters_density = np.array(parameters_density)
-
-    IDL.run("cd, '/home/hmorenom/SSW_Files/OgModel/density'  \n")
-    IDL.run("restore,'density_starting_params.save'\n", stdout=True)
-
-    start_parameters_density = IDL.DENSITY
-    start_parameters_density = np.array(parameters_density)
-
-    return np.array([original_density, parameters_density, start_parameters_density])
+    return np.array([height, temp, density, velocity])
 
 def get_carbon_ion():
 
 
     IDL.run("cd, '/home/hmorenom/SSW_Files/FastWindData'  \n")
-    IDL.run("restore,'fast_wind_measurements.save', /v\n", stdout=True)
-    IDL.run("measured_ion = carbon")
+    IDL.run("restore,'fast_wind_measurements_ace.save', /v\n", stdout=True)
+    IDL.run("measured_ion = carbon(1,*)")
 
     measured_ion = IDL.MEASURED_ION
+
+    measured_ion = convert_to_fraction(measured_ion)
 
     IDL.run("cd, '/home/hmorenom/SSW_Files/OgModel/temp_vis'  \n")
     IDL.run("restore,'pred_c.save'\n", stdout=True)
@@ -159,16 +155,18 @@ def get_carbon_ion():
 
     predicted_ion = IDL.PREDICTED_ION
 
-    return np.array([measured_ion, predicted_ion])
+    return np.column_stack((np.array(measured_ion), np.array(predicted_ion))).T
 
 def get_oxygen_ion():
 
 
     IDL.run("cd, '/home/hmorenom/SSW_Files/FastWindData'  \n")
-    IDL.run("restore,'fast_wind_measurements.save', /v\n", stdout=True)
-    IDL.run("measured_ion = oxygen")
+    IDL.run("restore,'fast_wind_measurements_ace.save', /v\n", stdout=True)
+    IDL.run("measured_ion = oxygen(1,*)")
 
     measured_ion = IDL.MEASURED_ION
+
+    measured_ion = convert_to_fraction(measured_ion)
 
     IDL.run("cd, '/home/hmorenom/SSW_Files/OgModel/temp_vis'  \n")
     IDL.run("restore,'pred_o.save'\n", stdout=True)
@@ -176,16 +174,19 @@ def get_oxygen_ion():
 
     predicted_ion = IDL.PREDICTED_ION
 
-    return np.array([measured_ion, predicted_ion])
+    return np.column_stack((np.array(measured_ion), np.array(predicted_ion))).T
 
 def get_iron_ion():
 
 
     IDL.run("cd, '/home/hmorenom/SSW_Files/FastWindData'  \n")
-    IDL.run("restore,'fast_wind_measurements.save', /v\n", stdout=True)
-    IDL.run("measured_ion = iron")
+    IDL.run("restore,'fast_wind_measurements_ace.save', /v\n", stdout=True)
+    IDL.run("measured_ion = iron(1,*)")
+
 
     measured_ion = IDL.MEASURED_ION
+
+    measured_ion = convert_to_fraction(measured_ion)
 
     IDL.run("cd, '/home/hmorenom/SSW_Files/OgModel/temp_vis'  \n")
     IDL.run("restore,'pred_fe.save'\n", stdout=True)
@@ -193,42 +194,27 @@ def get_iron_ion():
 
     predicted_ion = IDL.PREDICTED_ION
 
-    return np.array([measured_ion, predicted_ion])
+    return np.column_stack((np.array(measured_ion), np.array(predicted_ion))).T
     
-def plot_temp(values_end,  values_start):
+def plot_temp(height, temp):
 
     fig_dens, (ax1) = plt.subplots(1, 1, figsize=(10, 10))
-    ax1.plot(values_end[0], values_end[2], color='green', label='Theoretical Temperature')
-    ax1.plot(values_end[0], values_end[5], color='blue',
+    ax1.plot(height, temp, color='blue',
              label='Final Parametrized Temperature')
-    ax1.plot(values_start[0], values_start[5], 'g--', color='red',
-             label='Initial Parametrized Temperature')
     ax1.set_xlabel('Distance from the Sun [solar radii] (log scale)')
     ax1.set_ylabel('Temperature [K] (log scale)')
     ax1.set(title='Temperature vs. Distance from the Sun')
     ax1.grid()
-    #ax2.plot(values[0], values[1], color='green', label='Original Mass')
-    #ax2.plot(values[0], values[3], color='blue',
-    #         label='First Parametrized Mass')
-    #ax2.set_xlabel('Distance (log(solar radii))')
-    #ax2.set_ylabel('Mass')
-    #ax2.set(title='Mass')
     ax1.legend()
     ax1.set_yscale('log')
     ax1.set_xscale('log')
 
-    #ax2.set_yscale('log')
-    #ax2.set_xscale('log')
-
-def plot_vel(values_end, values_start):
+def plot_vel(height, vel):
 
     fig_dens, (ax1) = plt.subplots(1, 1, figsize=(10, 10))
-    #ax1.plot(values_end[0], values_end[3], color='green', label='Theoretical Velocity')
-    ax1.plot(values_end[0], values_end[6], color='blue',
+    ax1.plot(height, vel, color='blue',
              label='Final Parametrized Velocity')
-    ax1.plot(values_start[0], values_start[6], 'g--', color='red',
-             label='Initial Parametrized Velocity')
-    ax1.hlines(y=c[-2], xmin = values_end[0][0], xmax = values_end[0][-1], color='r', linestyle='-')
+    ax1.hlines(y=c[-2], xmin = height[0], xmax = height[-1], color='r', linestyle='--')
     ax1.set_xlabel('Distance from the Sun [solar radii] (log scale)')
     ax1.set_ylabel('Velocity (log scale)')
     ax1.set(title='Velocity vs. Distance from the Sun')
@@ -247,14 +233,11 @@ def plot_vel(values_end, values_start):
     #ax2.set_xscale('log')
 
 
-def plot_densities(height, dens):
+def plot_density(height, density):
 
     fig, (ax1) = plt.subplots(1, 1, figsize=(10, 10))
-    ax1.plot(height, dens[0][705:], color='green', label='Theoretical Electron Density')
-    ax1.plot(height, dens[1][1:], color='blue',
+    ax1.plot(height, density, color='blue',
              label='Final Parametrized Electron Density')
-    ax1.plot(height, dens[2][1:], 'g--', color='red',
-             label='Starting Parametrized Electron Density')
     ax1.set_xlabel('Distance from the Sun[solar radii] (log scale) ')
     ax1.set_ylabel('Electron Density (log scale)')
     ax1.set(title='Electron Density vs. Distance from the Sun')
@@ -311,8 +294,8 @@ def plot_ions(ions_c, ions_o, ions_fe):
     ax2.legend()
     ax2.set_xticks(Z)
 
-    ions_fe_cut = [ions_fe[0,7:17], ions_fe[1,7:17]]
-    Y =  np.arange(7,17)
+    ions_fe_cut = [ions_fe[0,5:17], ions_fe[1,5:17]]
+    Y =  np.arange(5,17)
     ax3.bar(Y - 0.20, ions_fe_cut[0], color = 'b', width = 0.4, label='Measured Fractions')
     ax3.bar(Y + 0.20, ions_fe_cut[1], color = 'g', width = 0.4, label='Predicted Fractions')
     
@@ -323,45 +306,147 @@ def plot_ions(ions_c, ions_o, ions_fe):
     ax3.set_xticks(Y)
 
 
+def get_temps(directories):
+
+    heights = []
+    temps = []
+
+    for dir in directories:
+        IDL.run("cd, '" + dir + "'  \n")
+        IDL.run("restore,'pred_c.save', /v\n", stdout=True)
+        
+        height = IDL.HHH_USED
+        print(height.shape)
+        heights.append(height)
+        temp = IDL.TTT_USED
+        temps.append(temp)
+
+    return heights, temps
+
+def get_dens(directories):
+
+    heights = []
+    densities = []
+
+    for dir in directories:
+        IDL.run("cd, '" + dir + "'  \n")
+        IDL.run("restore,'pred_c.save', /v\n", stdout=True)
+        
+        height = IDL.HHH_USED
+        print(height.shape)
+        heights.append(height)
+        dens = IDL.DDD_USED
+        densities.append(dens)
+
+
+
+    #shortest_height = min(heights, key=len)
+
+    #fixed_dens = []
+
+    #for d in densities:
+    #    d = np.array(d[-len(shortest_height):])
+
+    #    fixed_dens.append(d)
+
+    #    print(d.shape)
+
+    
+
+    return heights, densities
+
+def get_vels(directories):
+
+    heights = []
+    vels = []
+
+    for dir in directories:
+        IDL.run("cd, '" + dir + "'  \n")
+        IDL.run("restore,'pred_c.save', /v\n", stdout=True)
+        
+        height = IDL.HHH_USED
+        print(height.shape)
+        heights.append(height)
+        vel = IDL.VVV_USED
+        vels.append(vel)
+
+    return heights, vels
+
+
+def overplot_temps(heights, temps):
+    fig_temps, (ax1) = plt.subplots(1, 1, figsize=(10, 10))
+    ax1.plot(heights[0], temps[0], color='blue',
+             label='Temperature for 687 km/s wind')
+    ax1.plot(heights[1], temps[1], color='red',
+             label='Temperature for 641 km/s wind')
+    ax1.plot(heights[2], temps[2], color='green',
+             label='Temperature for 582 km/s wind')
+    ax1.set_xlabel('Distance from the Sun [solar radii] (log scale)')
+    ax1.set_ylabel('Temperature [K] (log scale)')
+    ax1.set(title='Temperature vs. Distance from the Sun')
+    ax1.grid()
+    ax1.legend()
+    ax1.set_yscale('log')
+    ax1.set_xscale('log')
+
+def overplot_dens(heights, dens):
+    fig_dens, (ax1) = plt.subplots(1, 1, figsize=(10, 10))
+    ax1.plot(heights[0], dens[0], color='blue',
+             label='Density for 687 km/s wind')
+    ax1.plot(heights[1], dens[1], color='red',
+             label='Density for 641 km/s wind')
+    ax1.plot(heights[2], dens[2], color='green',
+             label='Density for 582 km/s wind')
+    ax1.set_xlabel('Distance from the Sun [solar radii] (log scale)')
+    ax1.set_ylabel('Electron Density (log scale)')
+    ax1.set(title='Electron Density vs. Distance from the Sun')
+    ax1.grid()
+    ax1.legend()
+    ax1.set_yscale('log')
+    ax1.set_xscale('log')
+
+def overplot_vels(heights, vels):
+    fig_dens, (ax1) = plt.subplots(1, 1, figsize=(10, 10))
+    ax1.plot(heights[0], vels[0], color='blue',
+             label='Velocity for 687 km/s wind')
+    ax1.plot(heights[1], vels[1], color='red',
+             label='Velocity for 641 km/s wind')
+    ax1.plot(heights[2], vels[2], color='green',
+             label='Velocity for 582 km/s wind')
+    ax1.set_xlabel('Distance from the Sun [solar radii] (log scale)')
+    ax1.set_ylabel('Wind Velocity [km/s] (log scale)')
+    ax1.set(title='Wind Velocity vs. Distance from the Sun')
+    ax1.grid()
+    ax1.legend()
+    ax1.set_yscale('log')
+    ax1.set_xscale('log')
+
+
 c = [2.36196e-17, 3.63, 2000000.0, 0.4, 0.75, 2.42e-15, 21.87, 0.7128]
 
 c =[4.2000000000000005e-17, 2.3213428125, 2000000.0, 0.361, 0.748125, 2e-15, 30, 0.8, 2000, 600, 687.66667, 0.4]
 
-c = [4e-17, 3, 2e6, 0.4, 0.75, 2e-15, 30, 0.8, 2000, 600, 750, 0.4]
+c = [4.4e-17, 2.43, 2000000.0, 0.324, 0.75, 1.8e-15, 39.93, 0.72, 2420.0, 393.65999999999997, 582.33333, 0.4]
 
 starting_c = [4e-17, 3, 2000000.0, 0.4, 0.75, 2e-15, 30, 0.8, 2000, 600, 687.66667, 0.4]
 
 starting_c = [4e-17, 3, 2e6, 0.4, 0.75, 2e-15, 30, 0.8, 2000, 600, 750, 0.4]
 
 
+direct = ['/home/hmorenom/SSW_Files/Results/687_Wind', '/home/hmorenom/SSW_Files/Results/641_Wind', '/home/hmorenom/SSW_Files/Results/582_Wind']
 
-values, index = parametrize(c)
+heights_temp, temp_array = get_temps(direct)
 
-#ssw.run('run_wind_vis')
+heights_dens, dens_array = get_dens(direct)
 
-start_vals, start_index = parametrize(starting_c)
+heights_vels, vels_array = get_vels(direct)
 
-plot_temp(values, start_vals)
+overplot_temps(heights_temp, temp_array)
 
-plot_vel(values, start_vals)
+overplot_dens(heights_dens, dens_array)
 
-#densities = get_density()
-
-#print(densities[0].shape)
-
-#densities[0] = densities[0][index:]
- 
-#densities[1] = densities[1, index:]
-
-#plot_densities(values[0], densities)
-
-#c_ions = get_carbon_ion()
-#o_ions = get_oxygen_ion()
-#fe_ions = get_iron_ion()
+overplot_vels(heights_vels, vels_array)
 
 
-#print(fe_ions)
-
-#plot_ions(c_ions, o_ions, fe_ions)
 
 plt.show()

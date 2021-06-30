@@ -148,8 +148,8 @@ def get_carbon_ion():
 
 
     IDL.run("cd, '/home/hmorenom/SSW_Files/FastWindData'  \n")
-    IDL.run("restore,'fast_wind_measurements.save', /v\n", stdout=True)
-    IDL.run("measured_ion = carbon")
+    IDL.run("restore,'fast_wind_measurements_ace.save', /v\n", stdout=True)
+    IDL.run("measured_ion = carbon(3,*)")
 
     measured_ion = IDL.MEASURED_ION
 
@@ -159,14 +159,14 @@ def get_carbon_ion():
 
     predicted_ion = IDL.PREDICTED_ION
 
-    return np.array([measured_ion, predicted_ion])
+    return np.column_stack((np.array(measured_ion), np.array(predicted_ion))).T
 
 def get_oxygen_ion():
 
 
     IDL.run("cd, '/home/hmorenom/SSW_Files/FastWindData'  \n")
-    IDL.run("restore,'fast_wind_measurements.save', /v\n", stdout=True)
-    IDL.run("measured_ion = oxygen")
+    IDL.run("restore,'fast_wind_measurements_ace.save', /v\n", stdout=True)
+    IDL.run("measured_ion = oxygen(3,*)")
 
     measured_ion = IDL.MEASURED_ION
 
@@ -176,14 +176,15 @@ def get_oxygen_ion():
 
     predicted_ion = IDL.PREDICTED_ION
 
-    return np.array([measured_ion, predicted_ion])
+    return np.column_stack((np.array(measured_ion), np.array(predicted_ion))).T
 
 def get_iron_ion():
 
 
     IDL.run("cd, '/home/hmorenom/SSW_Files/FastWindData'  \n")
-    IDL.run("restore,'fast_wind_measurements.save', /v\n", stdout=True)
-    IDL.run("measured_ion = iron")
+    IDL.run("restore,'fast_wind_measurements_ace.save', /v\n", stdout=True)
+    IDL.run("measured_ion = iron(3,*)")
+
 
     measured_ion = IDL.MEASURED_ION
 
@@ -193,7 +194,7 @@ def get_iron_ion():
 
     predicted_ion = IDL.PREDICTED_ION
 
-    return np.array([measured_ion, predicted_ion])
+    return np.column_stack((np.array(measured_ion), np.array(predicted_ion))).T
     
 def plot_temp(values_end,  values_start):
 
@@ -311,8 +312,8 @@ def plot_ions(ions_c, ions_o, ions_fe):
     ax2.legend()
     ax2.set_xticks(Z)
 
-    ions_fe_cut = [ions_fe[0,7:17], ions_fe[1,7:17]]
-    Y =  np.arange(7,17)
+    ions_fe_cut = [ions_fe[0,5:17], ions_fe[1,5:17]]
+    Y =  np.arange(5,17)
     ax3.bar(Y - 0.20, ions_fe_cut[0], color = 'b', width = 0.4, label='Measured Fractions')
     ax3.bar(Y + 0.20, ions_fe_cut[1], color = 'g', width = 0.4, label='Predicted Fractions')
     
@@ -327,7 +328,7 @@ c = [2.36196e-17, 3.63, 2000000.0, 0.4, 0.75, 2.42e-15, 21.87, 0.7128]
 
 c =[4.2000000000000005e-17, 2.3213428125, 2000000.0, 0.361, 0.748125, 2e-15, 30, 0.8, 2000, 600, 687.66667, 0.4]
 
-c = [4e-17, 3, 2e6, 0.4, 0.75, 2e-15, 30, 0.8, 2000, 600, 750, 0.4]
+c = [4.2000000000000005e-17, 2.3213428125, 2000000.0, 0.361, 0.748125, 2e-15, 30, 0.8, 2000, 600, 687.66667, 0.4]
 
 starting_c = [4e-17, 3, 2000000.0, 0.4, 0.75, 2e-15, 30, 0.8, 2000, 600, 687.66667, 0.4]
 
@@ -335,15 +336,15 @@ starting_c = [4e-17, 3, 2e6, 0.4, 0.75, 2e-15, 30, 0.8, 2000, 600, 750, 0.4]
 
 
 
-values, index = parametrize(c)
+#values, index = parametrize(c)
 
 #ssw.run('run_wind_vis')
 
-start_vals, start_index = parametrize(starting_c)
+#start_vals, start_index = parametrize(starting_c)
 
-plot_temp(values, start_vals)
+#plot_temp(values, start_vals)
 
-plot_vel(values, start_vals)
+#plot_vel(values, start_vals)
 
 #densities = get_density()
 
@@ -355,13 +356,15 @@ plot_vel(values, start_vals)
 
 #plot_densities(values[0], densities)
 
-#c_ions = get_carbon_ion()
-#o_ions = get_oxygen_ion()
-#fe_ions = get_iron_ion()
+c_ions = get_carbon_ion()
+o_ions = get_oxygen_ion()
+fe_ions = get_iron_ion()
+
+print(c_ions)
 
 
 #print(fe_ions)
 
-#plot_ions(c_ions, o_ions, fe_ions)
+plot_ions(c_ions, o_ions, fe_ions)
 
 plt.show()
