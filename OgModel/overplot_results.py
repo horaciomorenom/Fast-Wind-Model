@@ -381,6 +381,8 @@ def overplot_temps(heights, temps):
              label='Temperature for 641 km/s wind')
     ax1.plot(heights[2], temps[2], color='green',
              label='Temperature for 582 km/s wind')
+    ax1.plot(heights[3], temps[3], color='orange',
+             label='Temperature for 750 km/s wind')
     ax1.set_xlabel('Distance from the Sun [solar radii] (log scale)')
     ax1.set_ylabel('Temperature [K] (log scale)')
     ax1.set(title='Temperature vs. Distance from the Sun')
@@ -397,6 +399,8 @@ def overplot_dens(heights, dens):
              label='Density for 641 km/s wind')
     ax1.plot(heights[2], dens[2], color='green',
              label='Density for 582 km/s wind')
+    ax1.plot(heights[3], dens[3], color='orange',
+             label='Density for 750 km/s wind')
     ax1.set_xlabel('Distance from the Sun [solar radii] (log scale)')
     ax1.set_ylabel('Electron Density (log scale)')
     ax1.set(title='Electron Density vs. Distance from the Sun')
@@ -413,6 +417,8 @@ def overplot_vels(heights, vels):
              label='Velocity for 641 km/s wind')
     ax1.plot(heights[2], vels[2], color='green',
              label='Velocity for 582 km/s wind')
+    ax1.plot(heights[3], vels[3], color='orange',
+             label='Velocity for 750 km/s wind')
     ax1.set_xlabel('Distance from the Sun [solar radii] (log scale)')
     ax1.set_ylabel('Wind Velocity [km/s] (log scale)')
     ax1.set(title='Wind Velocity vs. Distance from the Sun')
@@ -423,7 +429,7 @@ def overplot_vels(heights, vels):
 
 
 c = [2.36196e-17, 3.63, 2000000.0, 0.4, 0.75, 2.42e-15, 21.87, 0.7128]
-
+        
 c =[4.2000000000000005e-17, 2.3213428125, 2000000.0, 0.361, 0.748125, 2e-15, 30, 0.8, 2000, 600, 687.66667, 0.4]
 
 c = [4.4e-17, 2.43, 2000000.0, 0.324, 0.75, 1.8e-15, 39.93, 0.72, 2420.0, 393.65999999999997, 582.33333, 0.4]
@@ -433,7 +439,7 @@ starting_c = [4e-17, 3, 2000000.0, 0.4, 0.75, 2e-15, 30, 0.8, 2000, 600, 687.666
 starting_c = [4e-17, 3, 2e6, 0.4, 0.75, 2e-15, 30, 0.8, 2000, 600, 750, 0.4]
 
 
-direct = ['/home/hmorenom/SSW_Files/Results/687_Wind', '/home/hmorenom/SSW_Files/Results/641_Wind', '/home/hmorenom/SSW_Files/Results/582_Wind']
+direct = ['/home/hmorenom/SSW_Files/Results/687_Wind', '/home/hmorenom/SSW_Files/Results/641_Wind', '/home/hmorenom/SSW_Files/Results/582_Wind','/home/hmorenom/SSW_Files/Results/750_Wind']
 
 heights_temp, temp_array = get_temps(direct)
 

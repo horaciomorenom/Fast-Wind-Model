@@ -138,7 +138,7 @@ def get_predictions():
     
     return np.array([height, temp, density, velocity])
 
-def get_carbon_ion():
+""" def get_carbon_ion():
 
 
     IDL.run("cd, '/home/hmorenom/SSW_Files/FastWindData'  \n")
@@ -194,7 +194,58 @@ def get_iron_ion():
 
     predicted_ion = IDL.PREDICTED_ION
 
-    return np.column_stack((np.array(measured_ion), np.array(predicted_ion))).T
+    return np.column_stack((np.array(measured_ion), np.array(predicted_ion))).T """
+
+def get_carbon_ion():
+
+
+    IDL.run("cd, '/home/hmorenom/SSW_Files/FastWindData'  \n")
+    IDL.run("restore,'fast_wind_measurements.save', /v\n", stdout=True)
+    IDL.run("measured_ion = carbon")
+
+    measured_ion = IDL.MEASURED_ION
+
+    IDL.run("cd, '/home/hmorenom/SSW_Files/OgModel/temp_vis'  \n")
+    IDL.run("restore,'pred_c.save'\n", stdout=True)
+    IDL.run("predicted_ion = ioneq_evol(*,-1)")
+
+    predicted_ion = IDL.PREDICTED_ION
+
+    return np.array([measured_ion, predicted_ion])
+
+def get_oxygen_ion():
+
+
+    IDL.run("cd, '/home/hmorenom/SSW_Files/FastWindData'  \n")
+    IDL.run("restore,'fast_wind_measurements.save', /v\n", stdout=True)
+    IDL.run("measured_ion = oxygen")
+
+    measured_ion = IDL.MEASURED_ION
+
+    IDL.run("cd, '/home/hmorenom/SSW_Files/OgModel/temp_vis'  \n")
+    IDL.run("restore,'pred_o.save'\n", stdout=True)
+    IDL.run("predicted_ion = ioneq_evol(*,-1)")
+
+    predicted_ion = IDL.PREDICTED_ION
+
+    return np.array([measured_ion, predicted_ion])
+
+def get_iron_ion():
+
+
+    IDL.run("cd, '/home/hmorenom/SSW_Files/FastWindData'  \n")
+    IDL.run("restore,'fast_wind_measurements.save', /v\n", stdout=True)
+    IDL.run("measured_ion = iron")
+
+    measured_ion = IDL.MEASURED_ION
+
+    IDL.run("cd, '/home/hmorenom/SSW_Files/OgModel/temp_vis'  \n")
+    IDL.run("restore,'pred_fe.save'\n", stdout=True)
+    IDL.run("predicted_ion = ioneq_evol(*,-1)")
+
+    predicted_ion = IDL.PREDICTED_ION
+
+    return np.array([measured_ion, predicted_ion])
     
 def plot_temp(height, temp):
 
@@ -319,17 +370,17 @@ c = [2.36196e-17, 3.63, 2000000.0, 0.4, 0.75, 2.42e-15, 21.87, 0.7128]
 
 c =[4.2000000000000005e-17, 2.3213428125, 2000000.0, 0.361, 0.748125, 2e-15, 30, 0.8, 2000, 600, 687.66667, 0.4]
 
-c = [4.4e-17, 2.43, 2000000.0, 0.324, 0.75, 1.8e-15, 39.93, 0.72, 2420.0, 393.65999999999997, 582.33333, 0.4]
+c = [5.3240000000000003e-17, 4.3923, 2000000.0, 0.396, 0.79, 2e-15, 21.87, 0.72, 2000, 726.0, 750, 0.324]
 
-starting_c = [4e-17, 3, 2000000.0, 0.4, 0.75, 2e-15, 30, 0.8, 2000, 600, 687.66667, 0.4]
+starting_c = [4e-17, 3, 2000000.0, 0.4, 0.75, 2e-15, 30, 0.8, 2000, 600, 582.33333, 0.4]
 
 starting_c = [4e-17, 3, 2e6, 0.4, 0.75, 2e-15, 30, 0.8, 2000, 600, 750, 0.4]
 
 
 
-values, index = parametrize(c)
+#values, index = parametrize(c)
 
-ssw.run('run_wind_vis')
+#ssw.run('run_wind_vis')
 
 #start_vals, start_index = parametrize(starting_c)
 
@@ -337,18 +388,18 @@ pred = get_predictions()
 
 #print(pred)
 
-plot_temp(pred[0], pred[1])
+#plot_temp(pred[0], pred[1])
 
-plot_density(pred[0], pred[2])
+#plot_density(pred[0], pred[2])
 
-plot_vel(pred[0], pred[3])
+#plot_vel(pred[0], pred[3])
 
 
 c_ions = get_carbon_ion()
 o_ions = get_oxygen_ion()
 fe_ions = get_iron_ion()
 
-print(c_ions)
+#print(c_ions)
 
 
 #print(fe_ions)

@@ -50,6 +50,7 @@ def cutAndTransformToArray(l, index):
 def parametrize(parameters):
 
     overflow = False
+    start_temp = 0
     c = parameters
 
     IDL.run("cd, '/home/hmorenom/SSW_Files/OgModel'  \n")
@@ -122,11 +123,13 @@ def parametrize(parameters):
     IDL.bfield = bfield
     IDL.alfven = alfven
 
+    start_temp = temp[0]
+
     IDL.run("save, units, height, mass, velocity, temp, bfield, alfven, filename= 'param_fast_wind.save', /verb ")
 
-    logging.info('Saved param_fast_wind.save file.')
+    logging.info('Saved param_fast_wind.save file, starting temperature of {}'.format(start_temp))
 
-    return overflow
+    return overflow, start_temp
 
 
 # takes array with filenames and returns array that includes all predictions
@@ -189,6 +192,12 @@ def run_iteration(params, obs, filenames):
         return [0, 0, overflow]
 
 
+def get_initial_temp(params):
+    overflow, start_temp = parametrize(params)
+
+    return start_temp
+
+
 def randomize_parameters(parameters, factor=0.1):  # randomizes a random parameter by 10%
 
     params = parameters[:]
@@ -228,12 +237,25 @@ def run_MCMC(obs, initial_params, iterations, filenames, log_directory, factor=0
 
     chi2_values = []
 
+    start_temp = 1e6 #start with a number greater than 50k
+
     for x in range(iterations):
 
         logging.info(
             '-------------------Begin iteration {} / {}.----------------------'.format(x + 1, iterations))
 
         new_params = randomize_parameters(old_params, factor=factor)
+
+        start_temp = get_initial_temp(new_params)
+
+        while start_temp > 5e4:
+
+            new_params = randomize_parameters(old_params, factor=factor)
+
+            start_temp = get_initial_temp(new_params)
+
+            logging.info('Starting temperature of {} too high, calculating new parameters'.format(start_temp))
+
         logging.info('New randomized parameters: {}'.format(new_params))
 
         new_iteration = run_iteration(new_params, obs, filenames)
@@ -335,9 +357,9 @@ c6 = 2.0e-15
 c7 = 30
 c8 = 0.8
 
-iterations = 300
+iterations = 2000
 
-initial_params = [1.9702842924375007e-17, 4.848277359492187, 2000000.0, 0.4, 0.7129687499999999, 3.3015455000000006e-15, 22.97716875, 0.7867978284374999, 1800.0, 660.0, 750, 0.4]
+initial_params = [4e-17, 3, 2000000.0, 0.4, 0.79, 2e-15, 30, 0.8, 2000, 600, 750, 0.4]
 
 filenames = ['pred_c.save', 'pred_o.save', 'pred_fe.save']
 #filenames = ['pred_c.save', 'pred_n.save', 'pred_o.save', 'pred_ne.save','pred_mg.save','pred_si.save', 'pred_s.save', 'pred_fe.save']
@@ -346,7 +368,7 @@ obs = get_observations()
 
 obs = [obs[0], obs[2], obs[-1]]  # isolate carbon for testing
 
-best_iteration, chi2_vals = run_MCMC(obs, initial_params, iterations, filenames, LOG_DIRECTORY, factor=0.05)
+best_iteration, chi2_vals = run_MCMC(obs, initial_params, iterations, filenames, LOG_DIRECTORY, factor=0.1)
 
 logging.info('Finished iterating. Final parameters: {}. Final Chi^2 value: {}.'.format(best_iteration[0], np.sum(np.array(best_iteration[1]))))
 

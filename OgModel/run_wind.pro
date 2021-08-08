@@ -5,11 +5,11 @@ pro run_wind
 
 defsysv,'!xuvtop', '/usr/local/ssw/packages/chianti/dbase/'
 
-wind_diagn,6,/photoion,file_model='param_fast_wind.save',/remote,/no_plot,day_photoion='21-06-2008', fileout='/home/hmorenom/SSW_Files/OgModel/temp/pred_c.save'
+wind_diagn,6,/photoion,file_model='param_fast_wind.save',/remote,/no_plot,day_photoion='12-08-2008', fileout='/home/hmorenom/SSW_Files/OgModel/temp/pred_c.save'
 
-wind_diagn,8,/photoion,file_model='param_fast_wind.save',/remote,/no_plot,day_photoion='21-06-2008', fileout='/home/hmorenom/SSW_Files/OgModel/temp/pred_o.save'
+wind_diagn,8,/photoion,file_model='param_fast_wind.save',/remote,/no_plot,day_photoion='12-08-2008', fileout='/home/hmorenom/SSW_Files/OgModel/temp/pred_o.save'
 
-wind_diagn,26,/photoion,file_model='param_fast_wind.save',/remote,/no_plot,day_photoion='21-06-2008', fileout='/home/hmorenom/SSW_Files/OgModel/temp/pred_fe.save'
+wind_diagn,26,/photoion,file_model='param_fast_wind.save',/remote,/no_plot,day_photoion='12-08-2008', fileout='/home/hmorenom/SSW_Files/OgModel/temp/pred_fe.save'
 
 ;wind_diagn,8,/photoion,file_model='param_fast_wind.save',/remote,/no_plot,day_photoion='26-03-2007', fileout='/home/hmorenom/SSW_Files/OgModel/temp/pred_o.save'
 
