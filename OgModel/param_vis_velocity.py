@@ -1,10 +1,11 @@
-#!/opt/anaconda3/bin/python
+#!/usr/bin/env python3
 import os
 from datetime import datetime
+import hissw
 from idlpy import *
 import numpy as np
 import matplotlib.pyplot as plt
-import hissw
+
 import math
 
 ssw = hissw.Environment(
@@ -18,10 +19,17 @@ def cutAndTransformToArray(l, ind):
     return l
 
 
-def parametrize(parameters):
+def parametrize(parameters, velocity):
 
     overflow = False
-    c = parameters
+
+    b_0 = 4.175e-21 / velocity
+
+    a = parameters[0:3]
+    b = parameters[3:6]
+    c = parameters[-4:]
+
+    print(a,b,c)
 
     IDL.run("cd, '/home/hmorenom/SSW_Files/OgModel'  \n")
     IDL.run("restore,'fast_wind.save'\n", stdout=True)
@@ -43,49 +51,64 @@ def parametrize(parameters):
 
     velocity = []
 
+    flux = []
+
     for r in height:
         
-        m = (c[0]/(r**c[1])) + (c[5]/(r**c[6]))
-        
-        T = c[2]*(((c[3]*r)**c[7])/(r-c[4]))*math.exp(-(c[3]/(r-c[4]))**3)
+        if r == 1:
+            m = 0
+            v = 0
+            T = 0
+            F = 0
+
+        else:
+
+            m = b_0*(213.8 / (r - b[0]))**2 + b[1] * math.exp(-b[2]*r)
+            
+            T = a[0] * (r**a[1] / (r-1) ) * math.exp(-(a[2] / (r-1)))
+
+            x = math.log10(r-1)
+
+            F_1 = -15.71
+
+            F_2 = c[0] * math.exp(-c[1] * (x + c[2]))
+
+            F_3 = 0.9 * math.exp(-( (x + c[2]) / c[3] )**2 )
+
+            F = 10 ** (F_1 + F_2 + F_3)
+
+            v = F / (m * r**2)
         
         mass.append(m)
         temp.append(T)
+        velocity.append(v)
+        flux.append(F)
+
+    mass = np.array(mass)
+    temp = np.array(temp)
+    velocity = np.array(velocity)
+    flux = np.array(flux)
 
     ind_20k = 0
+    ind_vel = 0
 
     for index, elem in enumerate(temp):
         if elem > 2e4:
             ind_20k = index
             break
-    
-    r_0 = height[ind_20k]
-
-    print('r_0 = {}'.format(r_0))
-
-    x_min =c[8]/(1.00925 ** c[9]) + c[10]/(1.00925 ** c[11])
-
-    print('x_min = {}'.format(x_min))
-
-    for r in height:
-        
-        x = c[8]/(r ** c[9]) + c[10]/(r ** c[11])
-        v = x_min - x
-        velocity.append(v)
-    
-
-    ind_vel = 0
 
     for index, elem in enumerate(velocity):
-        if elem > 1:
-            ind_vel = index
-            break
+            if elem > 1:
+                ind_vel = index
+                break
 
-    index = max(ind_20k, ind_vel) 
+    #ind_vel = np.where(velocity[1:] == np.min(velocity[1:])) #ignoring 1st element because it's zero
 
-    print('temp_0 before cutting = {}'.format(temp[0]))
-    print('vel_0 before cutting = {}'.format(velocity[0]))
-    
+    #ind_vel = ind_vel[0][0]
+
+    #index = ind_20k
+
+    index = max(ind_20k, ind_vel)
 
     height = cutAndTransformToArray(height, index)
     mass = cutAndTransformToArray(mass, index)
@@ -93,15 +116,26 @@ def parametrize(parameters):
     velocity = cutAndTransformToArray(velocity, index)
     bfield = cutAndTransformToArray(bfield, index)
     alfven = cutAndTransformToArray(alfven, index)
+    flux = cutAndTransformToArray(flux, index)
 
-    print('temp_0 after cutting = {}'.format(temp[0]))
-    print('vel_0 after cutting = {}'.format(velocity[0]))
-    
 
-    original_temp = cutAndTransformToArray(original_temp, index)
-    original_mass = cutAndTransformToArray(original_mass, index)
-    original_vel = cutAndTransformToArray(original_vel, index)
-    
+    """height = cutAndTransformToArray(height, index)
+    mass = cutAndTransformToArray(mass, index)
+    temp = cutAndTransformToArray(temp, index)
+    velocity = cutAndTransformToArray(velocity, index)
+    bfield = cutAndTransformToArray(bfield, index)
+    alfven = cutAndTransformToArray(alfven, index)
+    flux = cutAndTransformToArray(flux, index)"""
+
+   
+    print("Initial height: {}".format(height[0]))
+    print("Initial temp: {}".format(temp[0]))
+    print("Initial mass:{} ".format(mass[0]))
+    print("Initial velocity: {}".format(velocity[0]))
+
+    #print(height)
+    #print(temp)
+
     IDL.mass = mass
     IDL.temp = temp
     IDL.height = height
@@ -115,7 +149,7 @@ def parametrize(parameters):
     #ratio = IDL.RATIO
 
 
-    return np.array([height, original_mass, original_temp, original_vel, mass, temp, velocity]), index
+    return np.array([height, original_mass, original_temp, original_vel, temp, mass, velocity, flux])
     #IDL.run("save, units, height, mass, velocity, temp, bfield, alfven, filename= 'param_fast_wind.save', /verb ")
 
     #logging.info('Saved param_fast_wind.save file.')
@@ -311,8 +345,8 @@ def plot_ions(ions_c, ions_o, ions_fe):
     ax2.legend()
     ax2.set_xticks(Z)
 
-    ions_fe_cut = [ions_fe[0,7:17], ions_fe[1,7:17]]
-    Y =  np.arange(7,17)
+    ions_fe_cut = [ions_fe[0,4:17], ions_fe[1,4:17]]
+    Y =  np.arange(4,17)
     ax3.bar(Y - 0.20, ions_fe_cut[0], color = 'b', width = 0.4, label='Measured Fractions')
     ax3.bar(Y + 0.20, ions_fe_cut[1], color = 'g', width = 0.4, label='Predicted Fractions')
     
@@ -322,28 +356,25 @@ def plot_ions(ions_c, ions_o, ions_fe):
     ax3.legend()
     ax3.set_xticks(Y)
 
+a_initial = np.array([1.5e5, 0.8, 0.05])  #a_initial = np.array([1.7e5, 0.8, 0.05])
 
-c = [2.36196e-17, 3.63, 2000000.0, 0.4, 0.75, 2.42e-15, 21.87, 0.7128]
+b_initial = np.array([1, 1e-11, 11.0])    #b_initial = np.array([1, 1e-11, 11.0])
 
-c =[4.2000000000000005e-17, 2.3213428125, 2000000.0, 0.361, 0.748125, 2e-15, 30, 0.8, 2000, 600, 687.66667, 0.4]
+c_initial = np.array([5e-2, 3, 1.3, 1.3]) #c_initial = np.array([5e-2, 3, 1.3, 1.3])
 
-c = [4e-17, 3, 2e6, 0.4, 0.75, 2e-15, 30, 0.8, 2000, 600, 750, 0.4]
-
-starting_c = [4e-17, 3, 2000000.0, 0.4, 0.75, 2e-15, 30, 0.8, 2000, 600, 687.66667, 0.4]
-
-starting_c = [4e-17, 3, 2e6, 0.4, 0.75, 2e-15, 30, 0.8, 2000, 600, 750, 0.4]
+initial_params = np.concatenate([a_initial, b_initial, c_initial], axis = None)
 
 
 
-values, index = parametrize(c)
+values = parametrize(initial_params, 750)
 
 #ssw.run('run_wind_vis')
 
-start_vals, start_index = parametrize(starting_c)
+#start_vals = parametrize(initial_params)
 
-plot_temp(values, start_vals)
+#plot_temp(values, start_vals)
 
-plot_vel(values, start_vals)
+#plot_vel(values, start_vals)
 
 #densities = get_density()
 
@@ -364,4 +395,26 @@ plot_vel(values, start_vals)
 
 #plot_ions(c_ions, o_ions, fe_ions)
 
-plt.show()
+fig, (ax1,ax2,ax3, ax4) = plt.subplots(1,4, figsize=(16,7))
+ax1.plot(values[0]-1, values[4])
+ax1.set_yscale('log')
+ax1.set_xscale('log')
+ax1.set(title='Temp')
+
+ax2.plot(values[0]-1, values[5])
+ax2.set_yscale('log')
+ax2.set_xscale('log')
+ax2.set(title='Mass')
+
+ax3.plot(values[0]-1, values[7])
+ax3.set_yscale('log')
+ax3.set_xscale('log')
+ax3.set(title='flux')
+
+ax4.plot(values[0]-1, values[6])
+ax4.set_yscale('log')
+ax4.set_xscale('log')
+ax4.set(title='Vel')
+
+#plt.show()
+plt.savefig('graphs.png')

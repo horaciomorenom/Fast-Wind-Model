@@ -46,6 +46,21 @@ def get_observations(index):
 
     return observations
 
+def get_observations_750():
+
+    IDL.run("cd, '/home/hmorenom/SSW_Files/FastWindData' \n")
+    IDL.run("restore,'fast_wind_measurements.save'\n", stdout=True)
+    c_obs = IDL.carbon
+    n_obs = IDL.nitrogen
+    o_obs = IDL.oxygen
+    ne_obs = IDL.neon
+    mg_obs = IDL.magnesium
+    si_obs = IDL.silicon
+    s_obs = IDL.sulphur
+    fe_obs = IDL.iron
+    observations = [c_obs, n_obs, o_obs, ne_obs, mg_obs, si_obs, s_obs, fe_obs]
+    return observations
+
 
 # takes in a list and an index and returns a numpy array of all elements in the list after the index
 def cutAndTransformToArray(l, index):
@@ -55,11 +70,16 @@ def cutAndTransformToArray(l, index):
     return(l)
 
 
-def parametrize(parameters):
+def parametrize(parameters, velocity, save_vals):
 
     overflow = False
     start_temp = 0
-    c = parameters
+
+    b_0 = 4.175e-21 / velocity
+
+    a = parameters[0:3]
+    b = parameters[3:6]
+    c = parameters[-4:]
 
     IDL.run("cd, '/home/hmorenom/SSW_Files/OgModel'  \n")
     IDL.run("restore,'fast_wind.save'\n", stdout=True)
@@ -74,31 +94,57 @@ def parametrize(parameters):
 
     velocity = []
 
-    x_min = c[8]/(1.00925 ** c[9]) + c[10]/(1.00925 ** c[11])
+    flux = []
 
     for r in height:
-        try:
-            m = (c[0]/(r**c[1])) + (c[5]/(r**c[6]))
-        except OverflowError:
-            logging.info(
-                'Overflow Error in mass calculation, skipping set of parameters.')
-            overflow = True
-        try:
-            T = c[2]*(((c[3]*r)**c[7])/(r-c[4]))*math.exp(-(c[3]/(r-c[4]))**3)
-        except OverflowError:
-            logging.info(
-                'Overflow Error in temperature calculation, skipping set of parameters.')
-            overflow = True
-        try:
-            x = c[8]/(r ** c[9]) + c[10]/(r ** c[11])
-            v = x_min - x
-        except OverflowError:
-            logging.info(
-                'Overflow Error in velocity calculation, skipping set of parameters.')
-            overflow = True
-        mass.append(m)
+
+        if r == 1:
+            m = 0
+            v = 0
+            T = 0
+            F = 0
+
+        else:
+
+            try:
+                T = a[0] * (r**a[1] / (r-1) ) * math.exp(-(a[2] / (r-1)))
+            except OverflowError:
+                logging.info(
+                    'Overflow Error in temperature calculation, skipping set of parameters.')
+                overflow = True
+
+            try:
+                m = b_0*(213.8 / (r - b[0]))**2 + b[1] * math.exp(-b[2]*r)
+            except OverflowError:
+                logging.info(
+                    'Overflow Error in mass calculation, skipping set of parameters.')
+                overflow = True
+            
+            try:
+                x = math.log10(r-1)
+
+                F_1 = -15.71
+
+                F_2 = c[0] * math.exp(-c[1] * (x + c[2]))
+
+                F_3 = 0.9 * math.exp(-( (x + c[2]) / c[3] )**2 )
+
+                F = 10 ** (F_1 + F_2 + F_3)
+
+                v = F / (m * r**2)
+
+            except OverflowError:
+                logging.info(
+                    'Overflow Error in velocity calculation, skipping set of parameters.')
+                overflow = True
+
         temp.append(T)
+
+        mass.append(m)
+        
         velocity.append(v)
+
+        flux.append(F)
         
 
     ind_20k = 0
@@ -117,6 +163,8 @@ def parametrize(parameters):
 
     index = max(ind_20k, ind_vel)
 
+    #index = 0
+
     height = cutAndTransformToArray(height, index)
     mass = cutAndTransformToArray(mass, index)
     temp = cutAndTransformToArray(temp, index)
@@ -124,20 +172,25 @@ def parametrize(parameters):
     bfield = cutAndTransformToArray(bfield, index)
     alfven = cutAndTransformToArray(alfven, index)
 
-    IDL.mass = mass
-    IDL.temp = temp
-    IDL.height = height
-    IDL.velocity = velocity
-    IDL.bfield = bfield
-    IDL.alfven = alfven
+    if save_vals:
+        IDL.mass = mass
+        IDL.temp = temp
+        IDL.height = height
+        IDL.velocity = velocity
+        IDL.bfield = bfield
+        IDL.alfven = alfven
 
+        IDL.run("save, units, height, mass, velocity, temp, bfield, alfven, filename= 'param_fast_wind.save', /verb ")
+
+        logging.info('Saved param_fast_wind.save file, starting temperature of {}'.format(start_temp))
+
+    start_height = height[0]
     start_temp = temp[0]
+    start_vel = velocity[0]
 
-    IDL.run("save, units, height, mass, velocity, temp, bfield, alfven, filename= 'param_fast_wind.save', /verb ")
+    
 
-    logging.info('Saved param_fast_wind.save file, starting temperature of {}'.format(start_temp))
-
-    return overflow, start_temp
+    return overflow, start_height, start_temp, start_vel
 
 
 # takes array with filenames and returns array that includes all predictions
@@ -181,9 +234,9 @@ def chiSquared(observations, predictions):
 
 
 # takes parameter values and observation ioneq values, returns an array containing (params, chi2)
-def run_iteration(params, obs, filenames):
+def run_iteration(params, obs, filenames, velocity):
 
-    overflow = parametrize(params)
+    overflow = parametrize(params, velocity, True)
     if overflow != True:
         try:
             logging.info('Running run_wind program')
@@ -199,21 +252,25 @@ def run_iteration(params, obs, filenames):
     else:
         return [0, 0, overflow]
 
-def get_initial_temp(params):
-    overflow, start_temp = parametrize(params)
+def get_initial_vals(params, velocity):
+    overflow, start_height, start_temp, start_vel = parametrize(params, velocity, False)
 
-    return start_temp
+    return start_height, start_temp, start_vel
 
 
 def randomize_parameters(parameters, factor=0.1):  # randomizes a random parameter by 10%
 
     params = parameters[:]
-    index = 2
+    
+    index = np.random.randint(len(params))
 
-    while (index == 2 or index == 10):
-        index = np.random.randint(len(params))
-
-    sign = np.random.choice([-1, 1])
+    if index == 3: # make sure that the b_1 parameter stays above 1
+        if params[3] - factor*params[3] < 1.0:
+            sign = 1
+        else: 
+            sign = np.random.choice([-1, 1])
+    else:
+        sign = np.random.choice([-1, 1])
 
     params[index] += sign*factor*params[index]
 
@@ -232,19 +289,18 @@ def apply_Metropolis(current_iteration, new_iteration):
         return current_iteration
 
 
-def run_MCMC(obs, initial_params, iterations, filenames, log_directory, factor=0.1):
+def run_MCMC(obs, initial_params, iterations, filenames, log_directory, velocity, factor=0.1):
 
     logging.info('Runing MCMC for {} iterations. Initial parameters: {}'.format(
         iterations, initial_params))
 
     update_progress(0)
 
-    best_iteration = run_iteration(initial_params, obs, filenames)
+    best_iteration = run_iteration(initial_params, obs, filenames, velocity)
     old_params = initial_params[:]
 
     chi2_values = []
 
-    start_temp = 1e6 #start with a number greater than 50k
 
     for x in range(iterations):
 
@@ -253,19 +309,19 @@ def run_MCMC(obs, initial_params, iterations, filenames, log_directory, factor=0
 
         new_params = randomize_parameters(old_params, factor=factor)
 
-        start_temp = get_initial_temp(new_params)
+        start_height, start_temp, start_vel = get_initial_vals(new_params, velocity)
 
-        while start_temp > 5e4:
+        while start_temp > 5e4 or start_height > 1.02:
 
             new_params = randomize_parameters(old_params, factor=factor)
 
-            start_temp = get_initial_temp(new_params)
+            start_height, start_temp, start_vel = get_initial_vals(new_params, velocity)
 
             logging.info('Starting temperature of {} too high, calculating new parameters'.format(start_temp))
 
         logging.info('New randomized parameters: {}'.format(new_params))
 
-        new_iteration = run_iteration(new_params, obs, filenames)
+        new_iteration = run_iteration(new_params, obs, filenames, velocity)
 
         # Check if there was not an overflow error in the calculation
         if new_iteration[2] != True:
@@ -286,7 +342,7 @@ def run_MCMC(obs, initial_params, iterations, filenames, log_directory, factor=0
         chi2_values.append(np.sum(np.array(best_iteration[1])))
 
         # if we have found a better set of parameters
-        if best_iteration[0] == new_iteration[0]:
+        if np.array_equal(best_iteration[0],  new_iteration[0]):
 
             save_chi2(iterations, chi2_values, log_directory)
 
@@ -343,9 +399,11 @@ def update_progress(progress):
 
 
 LOG_DIRECTORY = datetime.now().strftime(
-    '/home/hmorenom/SSW_Files/OgModel/log_vel/log_%m_%d_%Y_%H_%M_%S/')
+    '/home/hmorenom/SSW_Files/OgModel/log/log_%m_%d_%Y_%H_%M_%S/')
 
 os.mkdir(LOG_DIRECTORY)
+
+print("AAAAAA")
 
 LOG_FILENAME = LOG_DIRECTORY + 'logfile.log'
 IMG_FILENAME = LOG_DIRECTORY + 'chi2_plot.png'
@@ -355,35 +413,34 @@ logging.basicConfig(filename=LOG_FILENAME, format='%(asctime)s %(levelname)-8s %
 
 logging.info('Start program')
 
-logging.info('Doing trial for Fast wind with velocity 687.66667')
 
-c1 = 4e-17
-c2 = 3
-c3 = 2e6
-c4 = 0.4
-c5 = 0.75
-c6 = 2.0e-15
-c7 = 30
-c8 = 0.8
-c9 = 2000
-c10 = 600
-c11 = 641.58333 #final velocity
-c12 = 0.4
  
-iterations = 1500
+iterations = 500
 
-initial_params = [4e-17, 2.7, 2000000.0, 0.4, 0.79, 2e-15, 30, 0.8, 2000, 600, 687.333, 0.4]
+velocity = 750
+
+a_initial = np.array([1.5e5, 0.8, 0.05])
+
+b_initial = np.array([1.0, 1e-11, 11.0])
+
+c_initial = np.array([5e-2, 3, 1.2, 1.3])
+
+initial_params = np.concatenate((a_initial, b_initial, c_initial))
+
+logging.info('Doing trial for Fast wind with velocity {}.'.format(velocity))
+
+
 
 filenames = ['pred_c.save', 'pred_o.save', 'pred_fe.save']
 #filenames = ['pred_c.save', 'pred_n.save', 'pred_o.save', 'pred_ne.save','pred_mg.save','pred_si.save', 'pred_s.save', 'pred_fe.save']
 
-obs = get_observations(3) 
+obs = get_observations_750() 
 
 obs = [obs[0], obs[2], obs[-1]]  
 
 #print(obs)
 
-best_iteration, chi2_vals = run_MCMC(obs, initial_params, iterations, filenames, LOG_DIRECTORY, factor=0.1)
+best_iteration, chi2_vals = run_MCMC(obs, initial_params, iterations, filenames, LOG_DIRECTORY, velocity, factor=0.1)
 
 logging.info('Finished iterating. Final parameters: {}. Final Chi^2 value: {}.'.format(best_iteration[0], np.sum(np.array(best_iteration[1]))))
 
